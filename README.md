@@ -2,6 +2,9 @@ The [QiYi Smart Cube](https://speedcubeshop.com/products/qiyi-ai-3x3-bluetooth-s
 
 This document assumes you are somewhat familiar with Bluetooth Low Energy/GATT. If you are new to it, I recommend reading [this introductory article](https://learn.adafruit.com/introduction-to-bluetooth-low-energy/gatt).
 
+# Reference
+This repo contains a [reference implementation](reference_app) of the protocol.
+
 I've also created a [Wireshark plugin](wireshark_dissector) that is helpful when doing any work with the cube protocol.
 
 # GATT Profile
@@ -121,7 +124,7 @@ fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |1, 1|u8|Length (always 38 for *Cube Hello*)|
 |2, 2|u16_le|Opcode (0x2 for *Cube Hello*)|
 |4, 3|?|Unknown|
-|7, 27|-|Initial cube state|
+|7, 27|[CubeState](#cube-state-format)|Initial cube state|
 |34, 2|?|Unknown|
 |36, 2|u16_le|Checksum|
 
@@ -149,10 +152,10 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |-|-|-|
 |1, 1|u8|Length (always 94 for *State Change*)|
 |2, 2|u16_le|Opcode (0x3 for *State Change*)|
-|4, 3|-|Current turn|
-|7, 27|-|Cube state|
+|4, 3|?|Unknown (Current turn??)|
+|7, 27|[CubeState](#cube-state-format)|Cube state|
 |34, 2|?|Unknown|
-|36, 56|Previous turns|
+|36, 56|?|Unknown (Previous turns??)|
 |92, 2|u16_le|Checksum|
 
 ## Sync State
@@ -203,6 +206,25 @@ fe 26 04 00 00 df cc 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |1, 1|u8|Length (always 38 for *Sync Confirmation*)|
 |2, 2|u16_le|Opcode (0x4 for *Sync Confirmation*)|
 |4, 3|?|Unknown|
-|7, 27|-|State the cube now thinks it's in|
+|7, 27|[CubeState](#cube-state-format)|State the cube now thinks it's in|
 |34, 2|?|Unknown|
 |36, 2|u16_le|Checksum|
+
+# Cube State Format
+Cube states are stored as a 54-item-long array of 4-bit numbers, where each 4-bit number represents the color of a facelet (see table below). The index of the item in the array tells you where on the cube the facelet is.
+
+|Number|Color|
+|-|-|
+|0|orange|
+|1|red|
+|2|yellow|
+|3|white|
+|4|green|
+|5|blue|
+
+TODO: document the order/layout of each color as used in the [reference app](reference_app/src/cubestate.rs)
+
+A solved cube looks like this:
+```
+33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55
+```
