@@ -35,13 +35,15 @@ For the rest of this document, all values are given in their **decrypted form** 
 ## Messages
 All messages (both app->cube and cube->app) start with the byte `0xfe`. The next byte is the length of the message (excluding padding).
 
-For cube->app messages, there is a 16 bit little-endian "opcode" after the length. The opcode specifies the type of message. **app->cube messages do not have an opcode.** (TODO: ????)
+For cube->app messages, there is a 16 bit little-endian "opcode" after the length. The opcode specifies the type of message. **app->cube messages do not have an opcode.** (TODO: Is there a way to know which kind of message they are without just guessing from the length?)
 
 These are the kinds messages:
 - [*App Hello*](#app-hello)
 - [*Cube Hello*](#cube-hello)
 - [*ACK*](#message-acknowledgement)
 - [*State Change*](#state-change-notification)
+- [*Sync State*](#sync-state)
+- [*Sync Confirmation*](#sync-confirmation)
 
 ## Checksum
 
@@ -54,14 +56,16 @@ Here, the bolded part (`ef 1b`) is the little-endian checksum of `fe 09 02 00 02
 |-|-|
 |*App Hello*|app->cube|
 
-Immediately after connecting to the cube, you need to write an "*App Hello*" message to the `fff6` characteristic. I don't yet know what this message contains, but you can just send this one verbatim and things will still work:
+Immediately after connecting to the cube, you need to write an "*App Hello*" message to the `fff6` characteristic. The *App Hello* must be the first thing you send to the cube. The cube won't reply to **anything** you send unless you've already performed the *App Hello*.
+
+TODO: I don't yet know what this message contains, but if you capture the message as it is being sent between the QiYi app and the cube, you can just re-send that same message every time, and things will still work. However it will **not work** if you try to re-send a message that the app sent to a different cube - each cube seems to require a unique recipe for its *App Hello* messages. (TODO: maybe the App Hello contains part/all of the cube's MAC address?)
 ```
 L = length
 C = checksum
 
    L                         ??                            C
    /\ /------------------------------------------------\ /---\
-fe 15 00 6b 01 00 00 22 06 00 02 08 00 13 25 00 00 a3 cc ce 38
+fe 15 00 6b 01 00 00 22 06 00 02 08 00 13 25 00 00 a3 cc XX XX
 ```
 |Bytes (start index, length)|Type|Description|
 |-|-|-|
@@ -69,38 +73,12 @@ fe 15 00 6b 01 00 00 22 06 00 02 08 00 13 25 00 00 a3 cc ce 38
 |2, 17|?|Unknown|
 |19, 2|u16_le|Checksum|
 
-## Cube Hello
-|Command|Direction|
-|-|-|
-|*Cube Hello*|cube->app|
-
-The "*Cube Hello*" message is sent by the cube immediately after it receives the [*App Hello*](#app-hello). You need to [*ACK*](#message-acknowledgement) the *Cube Hello* just like any other cube->app message.
-
-```
-L = length (38)
-O = opcode (0x2)
-IS = initial cube state
-C = checksum
-
-   L    O      ?                                       IS                                               ?     C
-   /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---\
-fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 CC CC
-```
-|Bytes (start index, length)|Type|Description|
-|-|-|-|
-|1, 1|u8|Length (always 38 for *Cube Hello*)|
-|2, 2|u16_le|Opcode (0x2 for *Cube Hello*)|
-|4, 3|?|Unknown|
-|7, 27|-|Initial cube state|
-|34, 2|?|Unknown|
-|36, 2|u16_le|Checksum|
-
 ## Message Acknowledgement
 |Command|Direction|
 |-|-|
 |*ACK*|app->cube|
 
-Upon receiving cube->app messages, you have to send an *ACK* message back to the cube. This is the ACK format:
+Upon receiving most cube->app messages, you have to send an *ACK* message back to the cube. This is the ACK format:
 ```
 L = length (always 9 for ACKs)
 H = bytes 3-7 of the message being ACKed
@@ -117,12 +95,42 @@ That would be an ACK for a message that looks like this:
 fe zz XX XX XX XX XX zz zz zz zz zz zz ...
 ```
 
-TODO: seems like you can also ACK 2 (or more?) messages at once by just ACKing the latest message?
+*Not all* types of cube->app messages need to be ACKed - see the "Needs ACK?" section in the respective command's descriptions.
+
+TODO: seems like state change notifs only get ACKed every other time? Maybe there's a field in the state change command to request an ACK?
+
+## Cube Hello
+|Command|Direction|Needs ACK?|
+|-|-|-|
+|*Cube Hello*|cube->app|yes|
+
+The "*Cube Hello*" message is sent by the cube immediately after it receives the [*App Hello*](#app-hello).
+
+```
+L = length (38)
+O = opcode (0x2)
+S = initial cube state
+C = checksum
+
+   L    O      ?                                         S                                              ?     C
+   /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---\
+fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 XX XX
+```
+|Bytes (start index, length)|Type|Description|
+|-|-|-|
+|1, 1|u8|Length (always 38 for *Cube Hello*)|
+|2, 2|u16_le|Opcode (0x2 for *Cube Hello*)|
+|4, 3|?|Unknown|
+|7, 27|-|Initial cube state|
+|34, 2|?|Unknown|
+|36, 2|u16_le|Checksum|
 
 ## State Change Notification
-|Command|Direction|
-|-|-|
-|*State Change*|cube->app|
+|Command|Direction|Needs ACK?|
+|-|-|-|
+|*State Change*|cube->app|yes|
+
+TODO: at some point it stops sending ACKs until the cube is solved?
 
 ```
 L = length (94)
@@ -134,7 +142,7 @@ C = checksum
 
    L    O      T                                         S                                              ?                                                                      P                                                                                                      C
    /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
-fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 CC CC
+fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
 
 |Bytes (start index, length)|Type|Description|
@@ -146,3 +154,55 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |34, 2|?|Unknown|
 |36, 56|Previous turns|
 |92, 2|u16_le|Checksum|
+
+## Sync State
+|Command|Direction|
+|-|-|
+|*Sync State*|app->cube|
+
+If the physical state of the cube becomes out of sync with what the cube thinks it is, you can send the *Sync State* command to tell the cube to reset its remembered state to one you provide in the command. When the cube recieves a *Sync State* command it will reply with a [*Sync Confirmation*](#sync-confirmation) command.
+
+```
+L = length (38)
+S = new state to set the cube into
+C = checksum
+
+   L        ?                                                S                                          ?     C
+   /\ /------------\ /------------------------------------------------------------------------------\ /---\ /---\
+fe 26 04 17 88 8b 31 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 00 XX XX
+```
+
+|Bytes (start index, length)|Type|Description|
+|-|-|-|
+|1, 1|u8|Length (always 38 for *Sync State*)|
+|2, 5|?|Unknown|
+|7, 27|-|The state to set the cube to|
+|34, 2|?|Unknown|
+|36, 2|u16_le|Checksum|
+
+## Sync Confirmation
+|Command|Direction|Needs ACK?|
+|-|-|-|
+|*Sync Confirmation*|cube->app|no|
+
+Sent in response to a [*Sync State*](#sync-state) command.
+
+```
+L = length (38)
+O = opcode (0x4)
+S = cube's current state
+C = checksum
+
+   L    O       ?                                             S                                         ?     C
+   /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---\
+fe 26 04 00 00 df cc 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 XX XX
+```
+
+|Bytes (start index, length)|Type|Description|
+|-|-|-|
+|1, 1|u8|Length (always 38 for *Sync Confirmation*)|
+|2, 2|u16_le|Opcode (0x4 for *Sync Confirmation*)|
+|4, 3|?|Unknown|
+|7, 27|-|State the cube now thinks it's in|
+|34, 2|?|Unknown|
+|36, 2|u16_le|Checksum|
