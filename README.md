@@ -1,5 +1,3 @@
-https://github.com/Flying-Toast/qiyi_smartcube_protocol/assets/38232168/6baa54a0-3fca-4322-899c-c70e7e7ca982
-
 The [QiYi Smart Cube](https://speedcubeshop.com/products/qiyi-ai-3x3-bluetooth-smart-cube-speed-version) is the cheapest of the newly invented genre of bluetooth-enabled "smart" Rubik's cubes. Unfortunately QiYi has refused to publish the protocol used by the cube, and until now there hasn't been much progress in reverse engineering it. This document provides a best effort to reverse engineer and document the protocol, but it is not a complete specification. If you discover anything new please send a pull request!
 
 This document assumes you are somewhat familiar with Bluetooth Low Energy/GATT. If you are new to it, I recommend reading [this introductory article](https://learn.adafruit.com/introduction-to-bluetooth-low-energy/gatt).
@@ -46,7 +44,7 @@ These are the kinds of messages:
 - [*App Hello*](#app-hello)
 - [*Cube Hello*](#cube-hello)
 - [*ACK*](#message-acknowledgement)
-- [*State Change*](#state-change-notification)
+- [*State Change*](#state-change)
 - [*Sync State*](#sync-state)
 - [*Sync Confirmation*](#sync-confirmation)
 
@@ -132,7 +130,7 @@ fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |34, 2|?|Unknown|
 |36, 2|u16_le|Checksum|
 
-## State Change Notification
+## State Change
 |Command|Direction|Needs ACK?|
 |-|-|-|
 |*State Change*|cube->app|yes|
@@ -142,11 +140,12 @@ TODO: at some point the app can stop sending ACKs until the cube is solved???
 ```
 L = length (94)
 O = opcode (0x3)
+TS = timestamp
 S = cube state
 T = what turn was done to the cube
 C = checksum
 
-   L    O      ?                                         S                                            T  ?                                                                     ?                                                                                                      C
+   L    O      TS                                        S                                            T  ?                                                                     ?                                                                                                      C
    /\ /---\ /------\ /------------------------------------------------------------------------------\ /\ /\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
 fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
@@ -155,7 +154,7 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |-|-|-|
 |1, 1|u8|Length (always 94 for *State Change*)|
 |2, 2|u16_le|Opcode (0x3 for *State Change*)|
-|4, 3|?|Unknown (Timestamp?)|
+|4, 3|u24_be|Timestamp in units of 1.6 milliseconds (i.e. divide this field by 1.6 to get the timestamp in milliseconds)|
 |7, 27|[CubeState](#cube-state-format)|Cube state|
 |34, 1|u8|The move that was applied to the cube to bring it into this state. See the table below.|
 |35, 1|?|Unknown|

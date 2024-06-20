@@ -128,6 +128,7 @@ impl fmt::Display for Turn {
 pub struct StateChange {
     pub state: CubeState,
     pub turn: Turn,
+    pub millis_timestamp: u32,
 }
 
 #[derive(Error, Debug)]
@@ -214,11 +215,14 @@ pub fn parse_c2a_message(bytes: &[u8]) -> Result<C2aMessage> {
         }
         Opcode::StateChange => {
             let rawstate = p.get_bytes(7, 27)?;
+            let tsb = p.get_bytes(4, 3)?;
             let turnbyte = p.get_u8(34)?;
+            let ts: u32 = (tsb[0] as u32) << 16 | (tsb[1] as u32) << 8 | tsb[2] as u32;
 
             C2aBody::StateChange(StateChange {
                 turn: Turn::from_byte(turnbyte)?,
                 state: CubeState::from_raw(rawstate),
+                millis_timestamp: ((ts as f32) / 1.6) as u32,
             })
         }
         Opcode::SyncConfirmation => {

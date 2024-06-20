@@ -76,6 +76,7 @@ pub async fn run_protocol(mut cube: Cube) {
         .await;
 
     let mut notifs = cube.perip.notifications().await.unwrap();
+    let mut last_ms = 0;
     while let Some(n) = notifs.next().await {
         assert!(n.uuid == cube.fff6.uuid);
         let mut bytes = n.value;
@@ -89,7 +90,12 @@ pub async fn run_protocol(mut cube: Cube) {
 
         if let C2aBody::StateChange(sc) = &msg.body() {
             cubestate::render_cube(&sc.state);
-            println!("Turn: {}", sc.turn);
+            println!(
+                "Turn: {} | ts diff {}",
+                sc.turn,
+                sc.millis_timestamp - last_ms
+            );
+            last_ms = sc.millis_timestamp;
         }
 
         if let Some(pkt) = msg.make_ack() {
