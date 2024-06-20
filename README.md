@@ -1,3 +1,5 @@
+https://github.com/Flying-Toast/qiyi_smartcube_protocol/assets/38232168/6baa54a0-3fca-4322-899c-c70e7e7ca982
+
 The [QiYi Smart Cube](https://speedcubeshop.com/products/qiyi-ai-3x3-bluetooth-smart-cube-speed-version) is the cheapest of the newly invented genre of bluetooth-enabled "smart" Rubik's cubes. Unfortunately QiYi has refused to publish the protocol used by the cube, and until now there hasn't been much progress in reverse engineering it. This document provides a best effort to reverse engineer and document the protocol, but it is not a complete specification. If you discover anything new please send a pull request!
 
 This document assumes you are somewhat familiar with Bluetooth Low Energy/GATT. If you are new to it, I recommend reading [this introductory article](https://learn.adafruit.com/introduction-to-bluetooth-low-energy/gatt).
@@ -40,7 +42,7 @@ All messages (both app->cube and cube->app) start with the byte `0xfe`. The next
 
 For cube->app messages, there is a 16 bit little-endian "opcode" after the length. The opcode specifies the type of message. **app->cube messages do not have an opcode.** (TODO: Is there a way to know which kind of message they are without just guessing from the length?)
 
-These are the kinds messages:
+These are the kinds of messages:
 - [*App Hello*](#app-hello)
 - [*Cube Hello*](#cube-hello)
 - [*ACK*](#message-acknowledgement)
@@ -51,7 +53,7 @@ These are the kinds messages:
 ## Checksum
 
 The last 2 bytes of each message (before the zero padding) are a checksum of the message (minus any zero padding) using the [CRC-16-MODBUS](https://www.modbustools.com/modbus_crc16.html) algorithm. The checksum is in little-endian. Example:
-<code>fe 09 02 00 02 45 2c <b>ef 1b</b> 00 00 00 00 00 00 00</code>
+<code>fe 09 02 00 02 45 2c <b>ef 1b</b></code>
 Here, the bolded part (`ef 1b`) is the little-endian checksum of `fe 09 02 00 02 45 2c`. So for this example the checksum is `0x1bef`.
 
 ## App Hello
@@ -140,12 +142,10 @@ TODO: at some point the app can stop sending ACKs until the cube is solved???
 ```
 L = length (94)
 O = opcode (0x3)
-T = current turn
 S = cube state
-P = previous turns
 C = checksum
 
-   L    O      T                                         S                                              ?                                                                      P                                                                                                      C
+   L    O      ?                                         S                                              ?                                                                      ?                                                                                                      C
    /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
 fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
