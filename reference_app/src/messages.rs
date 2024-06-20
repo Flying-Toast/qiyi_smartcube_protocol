@@ -28,7 +28,7 @@ impl Opcode {
 pub struct C2aMessage<'a> {
     // /// Reference to bytes 3-7 for use in ACKs
     ack_head: &'a [u8],
-    body: C2aBody<'a>,
+    body: C2aBody,
 }
 
 impl<'a> C2aMessage<'a> {
@@ -51,7 +51,7 @@ impl<'a> C2aMessage<'a> {
         }
     }
 
-    pub fn body(&self) -> &C2aBody<'a> {
+    pub fn body(&self) -> &C2aBody {
         &self.body
     }
 }
@@ -59,14 +59,14 @@ impl<'a> C2aMessage<'a> {
 /// The "body" of a cube->app message is the decrypted contents
 /// minus the `0xfe` prefix, length, opcode, padding, and checksum.
 #[derive(Debug)]
-pub enum C2aBody<'a> {
-    CubeHello(CubeHello<'a>),
-    StateChange(StateChange<'a>),
+pub enum C2aBody {
+    CubeHello(CubeHello),
+    StateChange(StateChange),
 }
 
 #[derive(Debug)]
-pub struct CubeHello<'a> {
-    pub state: CubeState<'a>,
+pub struct CubeHello {
+    pub state: CubeState,
 }
 
 #[derive(Debug)]
@@ -125,8 +125,8 @@ impl fmt::Display for Turn {
 }
 
 #[derive(Debug)]
-pub struct StateChange<'a> {
-    pub state: CubeState<'a>,
+pub struct StateChange {
+    pub state: CubeState,
     pub turn: Turn,
 }
 

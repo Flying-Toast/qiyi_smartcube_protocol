@@ -242,9 +242,36 @@ Cube states are stored as a 54-item-long array of 4-bit numbers, where each 4-bi
 |4|green|
 |5|blue|
 
-TODO: document the order/layout of each color as used in the [reference app](reference_app/src/cubestate.rs)
+Within each byte, the lower 4 bits are ordered *before* the upper 4 bits. This is true for all the bytes but is especially noticeable with the byte on the boundry between two faces (see the "!!" in diagram below).
 
 A solved cube looks like this:
 ```
+    WHITE   !!     RED        GREEN    !!   YELLOW       ORANGE   !!    BLUE
+/----------\!!/----------\ /----------\!!/----------\ /----------\!!/----------\
 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55
+```
+
+Indices into each side's sub-array map to facets like this (W=white, O=orange, etc):
+```
+          ┌──┬──┬──┐
+          │W0│W1│W2│
+          ├──┼──┼──┤
+          │W3│W4│W5│
+          ├──┼──┼──┤
+          │W6│W7│W8│
+          └──┴──┴──┘
+┌──┬──┬──┐┌──┬──┬──┐┌──┬──┬──┐┌──┬──┬──┐
+│O0│O1│O2││G0│G1│G2││R0│R1│R2││B0│B1│B2│
+├──┼──┼──┤├──┼──┼──┤├──┼──┼──┤├──┼──┼──┤
+│O3│O4│O5││G3│G4│G5││R3│R4│R5││B3│B4│B5│
+├──┼──┼──┤├──┼──┼──┤├──┼──┼──┤├──┼──┼──┤
+│O6│O7│O8││G6│G7│G8││R6│R7│R8││B6│B7│B8│
+└──┴──┴──┘└──┴──┴──┘└──┴──┴──┘└──┴──┴──┘
+          ┌──┬──┬──┐
+          │Y0│Y1│Y2│
+          ├──┼──┼──┤
+          │Y3│Y4│Y5│
+          ├──┼──┼──┤
+          │Y6│Y7│Y8│
+          └──┴──┴──┘
 ```
