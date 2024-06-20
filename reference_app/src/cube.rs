@@ -89,6 +89,7 @@ pub async fn run_protocol(mut cube: Cube) {
 
         if let C2aBody::StateChange(sc) = &msg.body() {
             cubestate::render_cube(&sc.state);
+            println!("Turn: {}", sc.turn);
         }
 
         if let Some(pkt) = msg.make_ack() {

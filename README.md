@@ -143,10 +143,11 @@ TODO: at some point the app can stop sending ACKs until the cube is solved???
 L = length (94)
 O = opcode (0x3)
 S = cube state
+T = what turn was done to the cube
 C = checksum
 
-   L    O      ?                                         S                                              ?                                                                      ?                                                                                                      C
-   /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
+   L    O      ?                                         S                                            T  ?                                                                     ?                                                                                                      C
+   /\ /---\ /------\ /------------------------------------------------------------------------------\ /\ /\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
 fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
 
@@ -154,11 +155,28 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |-|-|-|
 |1, 1|u8|Length (always 94 for *State Change*)|
 |2, 2|u16_le|Opcode (0x3 for *State Change*)|
-|4, 3|?|Unknown (Current turn??)|
+|4, 3|?|Unknown (Timestamp?)|
 |7, 27|[CubeState](#cube-state-format)|Cube state|
-|34, 2|?|Unknown|
-|36, 56|?|Unknown (Previous turns??)|
+|34, 1|u8|The move that was applied to the cube to bring it into this state. See the table below.|
+|35, 1|?|Unknown|
+|36, 56|?|Unknown (Previous turns+timestamps??)|
 |92, 2|u16_le|Checksum|
+
+Looking at the cube with white on top and green in front, this is how numbers correspond to turns:
+|Byte|Move|
+|-|-|
+|`0x1`|L'|
+|`0x2`|L|
+|`0x3`|R'|
+|`0x4`|R|
+|`0x5`|D'|
+|`0x6`|D|
+|`0x7`|U'|
+|`0x8`|U|
+|`0x9`|F'|
+|`0xa`|F|
+|`0xb`|B'|
+|`0xc`|B|
 
 ## Sync State
 |Command|Direction|

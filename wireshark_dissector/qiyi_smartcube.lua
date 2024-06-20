@@ -13,6 +13,11 @@ local opcode_name_map = {
 	[OP_CUBE_HELLO] = "Cube Hello", [OP_STATE_CHANGE] = "State Change",
 	[OP_SYNC_CONFIRMATION] = "Sync Confirmation",
 }
+-- index = number, value = turn of that number.
+-- wow, 1-based arrays actually work for once
+local turnmap = {
+	"L'", "L", "R'", "R", "D'", "D", "U'", "U", "F'", "F", "B'", "B"
+}
 
 local decbytes_F = ProtoField.bytes("qiyisc.decbytes", "Decrypted Payload")
 local opcode_F = ProtoField.uint16("qiyisc.opcode", "Opcode", base.HEX, opcode_name_map)
@@ -22,13 +27,13 @@ local a2c_kind_F = ProtoField.string("qiyisc.a2c_kind", "a2c Message Type")
 local ack_of_F = ProtoField.framenum("qiyisc.ack_of", "ACKed Message")
 local ackhead_F = ProtoField.bytes("qiyisc.ackhead", "Bytes 3-7 of ACKed Message")
 local cubestate_F = ProtoField.bytes("qiyisc.cubestate", "Cube State")
--- State Change
-local current_turn_F = ProtoField.bytes("qiyisc.current_turn", "Current Turn")
-local previous_turns_F = ProtoField.bytes("qiyisc.previous_turns", "Previous Turns")
+local faceturn_F = ProtoField.uint8("qiyisc.faceturn", "Move", base.HEX, turnmap)
+-- App Hello
+local apphi_mac_F = ProtoField.bytes("qiyisc.apphello_mac", "Reversed MAC")
 
 qiyisc_proto.fields = {
 	decbytes_F, opcode_F, length_F, crc_F, a2c_kind_F, ack_of_F, cubestate_F,
-	current_turn_F,previous_turns_F, ackhead_F
+	ackhead_F, apphi_mac_F, faceturn_F
 }
 
 local ackheads = {}
@@ -74,12 +79,10 @@ function qiyisc_proto.dissector(buffer, pinfo, tree)
 		pinfo.cols.info = opcode_name_map[opcode] .. " (c->a)"
 
 		if opcode == OP_CUBE_HELLO then
-			-- TODO: backwards MAC field
 			subtree:add(cubestate_F, decbuf(7, 27))
 		elseif opcode == OP_STATE_CHANGE then
-			subtree:add(current_turn_F, decbuf(4, 3))
 			subtree:add(cubestate_F, decbuf(7, 27))
-			subtree:add(previous_turns_F, decbuf(36, 56))
+			subtree:add(faceturn_F, decbuf(34, 1))
 		elseif opcode == OP_SYNC_CONFIRMATION then
 			subtree:add(cubestate_F, decbuf(7, 27))
 		end
@@ -109,6 +112,7 @@ function qiyisc_proto.dissector(buffer, pinfo, tree)
 		guessed_a2c_kind = true
 
 		a2c_kind = "App Hello"
+		subtree:add(apphi_mac_F, decbuf(13, 6))
 	end
 	if is_a2c and msglen == 38 then
 		if guessed_a2c_kind then error("conflicting a2c_kind guess") end
