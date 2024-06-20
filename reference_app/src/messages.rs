@@ -1,6 +1,7 @@
 use crate::crc::crc16;
 use crate::cubestate::CubeState;
 use anyhow::{bail, Result};
+use btleplug::api::BDAddr;
 use thiserror::Error;
 
 #[derive(Debug)]
@@ -148,6 +149,18 @@ impl<'a> Parser<'a> {
             self.get_bytes_from_end_for_checksum(2)?.try_into().unwrap(),
         ))
     }
+}
+
+pub fn make_app_hello(mac: BDAddr) -> Vec<u8> {
+    // fill the 11-byte unknown field with zeros
+    let mut v = vec![0; 11];
+
+    let mut mac = mac.into_inner();
+    mac.reverse();
+
+    v.extend_from_slice(&mac);
+
+    v
 }
 
 /// Given the bytes of an **decrypted** message, parse them into a cube->app message.

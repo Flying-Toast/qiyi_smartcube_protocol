@@ -61,19 +61,21 @@ Here, the bolded part (`ef 1b`) is the little-endian checksum of `fe 09 02 00 02
 
 Immediately after connecting to the cube, you need to write an "*App Hello*" message to the `fff6` characteristic. The *App Hello* must be the first thing you send to the cube. The cube won't reply to **anything** you send unless you've already performed the *App Hello*.
 
-TODO: I don't yet know what this message contains, but if you capture the message as it is being sent between the QiYi app and the cube, you can just re-send that same message every time, and things will still work. However it will **not work** if you try to re-send a message that the app sent to a different cube - each cube seems to require a unique recipe for its *App Hello* messages. (TODO: maybe the App Hello contains part/all of the cube's MAC address?)
+The MAC address field needs to be reversed; the following example is for a cube with the address `cc a3 00 00 25 13`:
 ```
 L = length
+A = cube MAC address (but the bytes are backwards!)
 C = checksum
 
-   L                         ??                            C
-   /\ /------------------------------------------------\ /---\
+   L                ??                         A           C
+   /\ /------------------------------\ /---------------\ /---\
 fe 15 00 6b 01 00 00 22 06 00 02 08 00 13 25 00 00 a3 cc XX XX
 ```
 |Bytes (start index, length)|Type|Description|
 |-|-|-|
 |1, 1|u8|Length (always 21 for *App Hello*)|
-|2, 17|?|Unknown|
+|2, 11|?|Unknown, but doesn't seem to matter what data is in here; you can just fill it with zeros.|
+|13, 6|-|The MAC address of the cube, backwards|
 |19, 2|u16_le|Checksum|
 
 ## Message Acknowledgement
@@ -100,7 +102,7 @@ fe zz XX XX XX XX XX zz zz zz zz zz zz ...
 
 *Not all* types of cube->app messages need to be ACKed - see the "Needs ACK?" section in the respective command's descriptions.
 
-TODO: seems like state change notifs only get ACKed every other time? Maybe there's a field in the state change command to request an ACK?
+TODO: seems like state change notifs only need to get ACKed sometimes? Maybe there's a field in the state change command to request an ACK?
 
 ## Cube Hello
 |Command|Direction|Needs ACK?|
@@ -133,7 +135,7 @@ fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |-|-|-|
 |*State Change*|cube->app|yes|
 
-TODO: at some point it stops sending ACKs until the cube is solved?
+TODO: at some point the app can stop sending ACKs until the cube is solved???
 
 ```
 L = length (94)
@@ -163,7 +165,7 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |-|-|
 |*Sync State*|app->cube|
 
-If the physical state of the cube becomes out of sync with what the cube thinks it is, you can send the *Sync State* command to tell the cube to reset its remembered state to one you provide in the command. When the cube recieves a *Sync State* command it will reply with a [*Sync Confirmation*](#sync-confirmation) command.
+If the physical state of the cube becomes out of sync with what the cube thinks it is, you can send the *Sync State* command to tell the cube to reset its remembered state to the one you provide in the command. When the cube recieves a *Sync State* command it will reply with a [*Sync Confirmation*](#sync-confirmation) command.
 
 ```
 L = length (38)
@@ -179,7 +181,7 @@ fe 26 04 17 88 8b 31 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |-|-|-|
 |1, 1|u8|Length (always 38 for *Sync State*)|
 |2, 5|?|Unknown|
-|7, 27|-|The state to set the cube to|
+|7, 27|[CubeState](#cube-state-format)|The state to set the cube to|
 |34, 2|?|Unknown|
 |36, 2|u16_le|Checksum|
 

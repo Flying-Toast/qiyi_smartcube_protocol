@@ -74,6 +74,7 @@ function qiyisc_proto.dissector(buffer, pinfo, tree)
 		pinfo.cols.info = opcode_name_map[opcode] .. " (c->a)"
 
 		if opcode == OP_CUBE_HELLO then
+			-- TODO: backwards MAC field
 			subtree:add(cubestate_F, decbuf(7, 27))
 		elseif opcode == OP_STATE_CHANGE then
 			subtree:add(current_turn_F, decbuf(4, 3))

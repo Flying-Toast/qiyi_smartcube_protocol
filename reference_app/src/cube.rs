@@ -8,7 +8,6 @@ use aes::{
 use btleplug::api::{Characteristic, Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 use futures_util::StreamExt;
-use hex_literal::hex;
 
 pub struct Cube {
     perip: Peripheral,
@@ -21,7 +20,12 @@ impl Cube {
         Self {
             perip,
             fff6,
-            cipher: Aes128::new(&hex!("57b1f9abcd5ae8a79cb98ce7578c5108").into()),
+            cipher: Aes128::new(
+                &[
+                    87, 177, 249, 171, 205, 90, 232, 167, 156, 185, 140, 231, 87, 140, 81, 8,
+                ]
+                .into(),
+            ),
         }
     }
 
@@ -68,9 +72,8 @@ pub async fn run_protocol(mut cube: Cube) {
     cube.perip.subscribe(&cube.fff6).await.unwrap();
 
     // send App Hello
-    // TODO: need to figure out App Hello format, seems like it can only can be replayed for the same cube
-    let app_hello_blob = hex!("00f7020000220600023c46f7b20000a3cc");
-    cube.write_cmd_inner_bytes(&app_hello_blob).await;
+    cube.write_cmd_inner_bytes(&messages::make_app_hello(cube.perip.address()))
+        .await;
 
     let mut notifs = cube.perip.notifications().await.unwrap();
     while let Some(n) = notifs.next().await {
