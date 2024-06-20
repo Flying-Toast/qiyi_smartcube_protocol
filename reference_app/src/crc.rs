@@ -34,5 +34,5 @@ pub fn crc16(data: &[u8]) -> u16 {
         crc ^= TABLE[xor as usize];
     }
 
-    u16::from_le_bytes(crc.to_ne_bytes())
+    crc
 }
