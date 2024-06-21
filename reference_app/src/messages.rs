@@ -13,7 +13,7 @@ enum Opcode {
 }
 
 impl Opcode {
-    fn from_u16(x: u16) -> Result<Self> {
+    fn from_u8(x: u8) -> Result<Self> {
         Ok(match x {
             0x2 => Self::CubeHello,
             0x3 => Self::StateChange,
@@ -26,8 +26,9 @@ impl Opcode {
 /// A cube->app message.
 #[derive(Debug)]
 pub struct C2aMessage<'a> {
-    // /// Reference to bytes 3-7 for use in ACKs
+    /// Reference to bytes 3-7 for use in ACKs
     ack_head: &'a [u8],
+    millis_timestamp: u32,
     body: C2aBody,
 }
 
@@ -49,6 +50,11 @@ impl<'a> C2aMessage<'a> {
         } else {
             None
         }
+    }
+
+    /// Get the timestamp in milliseconds
+    pub fn timestamp(&self) -> u32 {
+        self.millis_timestamp
     }
 
     pub fn body(&self) -> &C2aBody {
@@ -128,7 +134,6 @@ impl fmt::Display for Turn {
 pub struct StateChange {
     pub state: CubeState,
     pub turn: Turn,
-    pub millis_timestamp: u32,
 }
 
 #[derive(Error, Debug)]
@@ -140,7 +145,7 @@ pub enum ParseError {
     #[error("Invalid checksum")]
     FailedChecksum,
     #[error("Invalid opcode (got {bad_opcode})")]
-    BadOpcode { bad_opcode: u16 },
+    BadOpcode { bad_opcode: u8 },
     #[error("Invalid turn ({turn} is not a valid move)")]
     BadTurn { turn: u8 },
 }
@@ -170,6 +175,12 @@ impl<'a> Parser<'a> {
     fn get_u16(&self, idx: usize) -> Result<u16> {
         Ok(u16::from_le_bytes(
             self.get_bytes(idx, 2)?.try_into().unwrap(),
+        ))
+    }
+
+    fn get_u32_be(&self, idx: usize) -> Result<u32> {
+        Ok(u32::from_be_bytes(
+            self.get_bytes(idx, 4)?.try_into().unwrap(),
         ))
     }
 }
@@ -204,7 +215,8 @@ pub fn parse_c2a_message(bytes: &[u8]) -> Result<C2aMessage> {
         bail!(ParseError::FailedChecksum);
     }
 
-    let opcode = Opcode::from_u16(p.get_u16(2)?)?;
+    let opcode = Opcode::from_u8(p.get_u8(2)?)?;
+    let millis_timestamp = (p.get_u32_be(3)? as f32 / 1.6) as u32;
     let body = match opcode {
         Opcode::CubeHello => {
             let rawstate = p.get_bytes(7, 27)?;
@@ -215,14 +227,11 @@ pub fn parse_c2a_message(bytes: &[u8]) -> Result<C2aMessage> {
         }
         Opcode::StateChange => {
             let rawstate = p.get_bytes(7, 27)?;
-            let tsb = p.get_bytes(4, 3)?;
             let turnbyte = p.get_u8(34)?;
-            let ts: u32 = (tsb[0] as u32) << 16 | (tsb[1] as u32) << 8 | tsb[2] as u32;
 
             C2aBody::StateChange(StateChange {
                 turn: Turn::from_byte(turnbyte)?,
                 state: CubeState::from_raw(rawstate),
-                millis_timestamp: ((ts as f32) / 1.6) as u32,
             })
         }
         Opcode::SyncConfirmation => {
@@ -234,6 +243,7 @@ pub fn parse_c2a_message(bytes: &[u8]) -> Result<C2aMessage> {
 
     Ok(C2aMessage {
         ack_head: p.get_bytes(2, 5)?,
+        millis_timestamp,
         body,
     })
 }

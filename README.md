@@ -38,7 +38,9 @@ For the rest of this document, all values are given in their **decrypted form** 
 ## Messages
 All messages (both app->cube and cube->app) start with the byte `0xfe`. The next byte is the length of the message (excluding padding).
 
-For cube->app messages, there is a 16 bit little-endian "opcode" after the length. The opcode specifies the type of message. **app->cube messages do not have an opcode.** (TODO: Is there a way to know which kind of message they are without just guessing from the length?)
+Additionally, for all cube->app messages:
+- The byte after the length is an "opcode" that specifies type type of message.
+- After the opcode is a 4 byte big-endian timestamp. **The timestamp is in units of 1.6 milliseconds! Divide it by 1.6 to convert to milliseconds!**
 
 These are the kinds of messages:
 - [*App Hello*](#app-hello)
@@ -114,20 +116,21 @@ The "*Cube Hello*" message is sent by the cube immediately after it receives the
 ```
 L = length (38)
 O = opcode (0x2)
+TS = timestamp (units of 1.6ms)
 S = initial cube state
 C = checksum
 
-   L    O      ?                                         S                                              ?     C
-   /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---\
+   L  O       TS                                         S                                              ?     C
+   /\ /\ /---------\ /------------------------------------------------------------------------------\ /---\ /---\
 fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 XX XX
 ```
 |Bytes (start index, length)|Type|Description|
 |-|-|-|
 |1, 1|u8|Length (always 38 for *Cube Hello*)|
-|2, 2|u16_le|Opcode (0x2 for *Cube Hello*)|
-|4, 3|?|Unknown|
+|2, 1|u8|Opcode (0x2 for *Cube Hello*)|
+|3, 4|u32_be|Timestamp (units of 1.6ms)|
 |7, 27|[CubeState](#cube-state-format)|Initial cube state|
-|34, 2|?|Unknown|
+|34, 2|?|Unknown (TODO: second byte might be battery level (out of 100)?)|
 |36, 2|u16_le|Checksum|
 
 ## State Change
@@ -140,21 +143,21 @@ TODO: at some point the app can stop sending ACKs until the cube is solved???
 ```
 L = length (94)
 O = opcode (0x3)
-TS = timestamp
+TS = timestamp (units of 1.6ms)
 S = cube state
 T = what turn was done to the cube
 C = checksum
 
-   L    O      TS                                        S                                            T  ?                                                                     ?                                                                                                      C
-   /\ /---\ /------\ /------------------------------------------------------------------------------\ /\ /\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
+   L  O      TS                                          S                                            T  ?                                                                     ?                                                                                                      C
+   /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
 fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
 
 |Bytes (start index, length)|Type|Description|
 |-|-|-|
 |1, 1|u8|Length (always 94 for *State Change*)|
-|2, 2|u16_le|Opcode (0x3 for *State Change*)|
-|4, 3|u24_be|Timestamp in units of 1.6 milliseconds (i.e. divide this field by 1.6 to get the timestamp in milliseconds)|
+|2, 1|u8|Opcode (0x3 for *State Change*)|
+|3, 4|u32_be|Timestamp (units of 1.6ms)|
 |7, 27|[CubeState](#cube-state-format)|Cube state|
 |34, 1|u8|The move that was applied to the cube to bring it into this state. See the table below.|
 |35, 1|?|Unknown|
@@ -212,19 +215,20 @@ Sent in response to a [*Sync State*](#sync-state) command.
 ```
 L = length (38)
 O = opcode (0x4)
+TS = timestamp (units of 1.6ms)
 S = cube's current state
 C = checksum
 
-   L    O       ?                                             S                                         ?     C
-   /\ /---\ /------\ /------------------------------------------------------------------------------\ /---\ /---\
+   L  O      TS                                               S                                         ?     C
+   /\ /\ /---------\ /------------------------------------------------------------------------------\ /---\ /---\
 fe 26 04 00 00 df cc 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 XX XX
 ```
 
 |Bytes (start index, length)|Type|Description|
 |-|-|-|
 |1, 1|u8|Length (always 38 for *Sync Confirmation*)|
-|2, 2|u16_le|Opcode (0x4 for *Sync Confirmation*)|
-|4, 3|?|Unknown|
+|2, 1|u8|Opcode (0x4 for *Sync Confirmation*)|
+|3, 4|u32_be|Timestamp (units of 1.6ms)|
 |7, 27|[CubeState](#cube-state-format)|State the cube now thinks it's in|
 |34, 2|?|Unknown|
 |36, 2|u16_le|Checksum|

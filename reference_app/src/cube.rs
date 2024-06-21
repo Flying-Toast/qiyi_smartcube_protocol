@@ -88,14 +88,14 @@ pub async fn run_protocol(mut cube: Cube) {
 
         let msg = messages::parse_c2a_message(&bytes).unwrap();
 
-        if let C2aBody::StateChange(sc) = &msg.body() {
+        if let C2aBody::StateChange(sc) = msg.body() {
             cubestate::render_cube(&sc.state);
             println!(
                 "Turn: {} | ts diff {}",
                 sc.turn,
-                sc.millis_timestamp - last_ms
+                msg.timestamp() - last_ms
             );
-            last_ms = sc.millis_timestamp;
+            last_ms = msg.timestamp();
         }
 
         if let Some(pkt) = msg.make_ack() {
