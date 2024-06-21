@@ -30,10 +30,11 @@ local cubestate_F = ProtoField.bytes("qiyisc.cubestate", "Cube State")
 local faceturn_F = ProtoField.uint8("qiyisc.faceturn", "Move", base.HEX, turnmap)
 local apphi_mac_F = ProtoField.bytes("qiyisc.apphello_mac", "Reversed MAC")
 local timestamp_F = ProtoField.uint32("qiyisc.timestamp", "Timestamp")
+local batlevel_F = ProtoField.uint8("qiyisc.battery_level", "Battery %")
 
 qiyisc_proto.fields = {
 	decbytes_F, opcode_F, length_F, crc_F, a2c_kind_F, ack_of_F, cubestate_F,
-	ackhead_F, apphi_mac_F, faceturn_F, timestamp_F,
+	ackhead_F, apphi_mac_F, faceturn_F, timestamp_F, batlevel_F,
 }
 
 local ackheads = {}
@@ -81,10 +82,13 @@ function qiyisc_proto.dissector(buffer, pinfo, tree)
 
 		if opcode == OP_CUBE_HELLO then
 			subtree:add(cubestate_F, decbuf(7, 27))
+			subtree:add(batlevel_F, decbuf(35, 1))
 		elseif opcode == OP_STATE_CHANGE then
 			subtree:add(cubestate_F, decbuf(7, 27))
 			subtree:add(faceturn_F, decbuf(34, 1))
+			subtree:add(batlevel_F, decbuf(35, 1))
 		elseif opcode == OP_SYNC_CONFIRMATION then
+			subtree:add(batlevel_F, decbuf(35, 1))
 			subtree:add(cubestate_F, decbuf(7, 27))
 		end
 	end

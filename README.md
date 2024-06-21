@@ -118,10 +118,11 @@ L = length (38)
 O = opcode (0x2)
 TS = timestamp (units of 1.6ms)
 S = initial cube state
+B = battery level
 C = checksum
 
-   L  O       TS                                         S                                              ?     C
-   /\ /\ /---------\ /------------------------------------------------------------------------------\ /---\ /---\
+   L  O       TS                                         S                                            ?  B    C
+   /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /---\
 fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 XX XX
 ```
 |Bytes (start index, length)|Type|Description|
@@ -130,7 +131,8 @@ fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |2, 1|u8|Opcode (0x2 for *Cube Hello*)|
 |3, 4|u32_be|Timestamp (units of 1.6ms)|
 |7, 27|[CubeState](#cube-state-format)|Initial cube state|
-|34, 2|?|Unknown (TODO: second byte might be battery level (out of 100)?)|
+|34, 1|?|Unknown|
+|35, 1|u8|Battery level (between 0 and 100)|
 |36, 2|u16_le|Checksum|
 
 ## State Change
@@ -146,9 +148,10 @@ O = opcode (0x3)
 TS = timestamp (units of 1.6ms)
 S = cube state
 T = what turn was done to the cube
+B = battery level out of 100
 C = checksum
 
-   L  O      TS                                          S                                            T  ?                                                                     ?                                                                                                      C
+   L  O      TS                                          S                                            T  B                                                                     ?                                                                                                      C
    /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
 fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
@@ -160,7 +163,7 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |3, 4|u32_be|Timestamp (units of 1.6ms)|
 |7, 27|[CubeState](#cube-state-format)|Cube state|
 |34, 1|u8|The move that was applied to the cube to bring it into this state. See the table below.|
-|35, 1|?|Unknown|
+|35, 1|u8|Battery level, 0-100|
 |36, 56|?|Unknown (Previous turns+timestamps??)|
 |92, 2|u16_le|Checksum|
 
@@ -217,10 +220,11 @@ L = length (38)
 O = opcode (0x4)
 TS = timestamp (units of 1.6ms)
 S = cube's current state
+B = battery level
 C = checksum
 
-   L  O      TS                                               S                                         ?     C
-   /\ /\ /---------\ /------------------------------------------------------------------------------\ /---\ /---\
+   L  O      TS                                               S                                       ?  B    C
+   /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /---\
 fe 26 04 00 00 df cc 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 XX XX
 ```
 
@@ -230,7 +234,8 @@ fe 26 04 00 00 df cc 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |2, 1|u8|Opcode (0x4 for *Sync Confirmation*)|
 |3, 4|u32_be|Timestamp (units of 1.6ms)|
 |7, 27|[CubeState](#cube-state-format)|State the cube now thinks it's in|
-|34, 2|?|Unknown|
+|34, 1|?|Unknown|
+|35, 1|u8|Battery level, 0-100|
 |36, 2|u16_le|Checksum|
 
 # Cube State Format
