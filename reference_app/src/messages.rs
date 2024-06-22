@@ -34,10 +34,10 @@ pub struct C2aMessage<'a> {
 
 impl<'a> C2aMessage<'a> {
     fn needs_ack(&self) -> bool {
-        match self.body {
+        match &self.body {
             C2aBody::CubeHello(_) => true,
-            // TODO: not every state change needs an ack???
-            C2aBody::StateChange(_) => true,
+            // Only solved state changes need to be ACKed
+            C2aBody::StateChange(sc) => sc.state.is_solved(),
         }
     }
 

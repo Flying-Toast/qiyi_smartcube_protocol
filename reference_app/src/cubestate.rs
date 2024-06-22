@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct CubeState {
-    facelets: [u8; 54],
+    facelets: [Color; 54],
 }
 
 impl CubeState {
@@ -8,27 +8,35 @@ impl CubeState {
         Self {
             facelets: raw
                 .iter()
-                .copied()
-                .flat_map(|x| [x & 0xf, (x & 0xF0) >> 4])
+                .flat_map(|&x| [x & 0xf, (x & 0xF0) >> 4])
+                .map(|x| Color::from_u8(x).unwrap())
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
         }
     }
 
+    pub fn is_solved(&self) -> bool {
+        use Color::*;
+
+        self.facelets
+            == [
+                White, White, White, White, White, White, White, White, White, Red, Red, Red, Red,
+                Red, Red, Red, Red, Red, Green, Green, Green, Green, Green, Green, Green, Green,
+                Green, Yellow, Yellow, Yellow, Yellow, Yellow, Yellow, Yellow, Yellow, Yellow,
+                Orange, Orange, Orange, Orange, Orange, Orange, Orange, Orange, Orange, Blue, Blue,
+                Blue, Blue, Blue, Blue, Blue, Blue, Blue,
+            ]
+    }
+
     /// Returns the colors of the facelets on the face whose center piece is `center_color`.
     fn face_colors(&self, center_color: Color) -> [Color; 9] {
         let idx = center_color.state_index();
-        (&self.facelets[idx..idx + 9])
-            .iter()
-            .map(|x| Color::from_u8(*x).unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap()
+        self.facelets[idx..idx + 9].try_into().unwrap()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Color {
     Orange,
     Red,
@@ -40,7 +48,7 @@ enum Color {
 
 impl Color {
     /// Index into the 54-item long state array where this color's face starts
-    fn state_index(&self) -> usize {
+    fn state_index(self) -> usize {
         match self {
             Self::White => 0,
             Self::Red => 9,
@@ -63,14 +71,14 @@ impl Color {
         })
     }
 
-    fn emoji(&self) -> &'static str {
+    fn emoji(self) -> &'static str {
         match self {
-            Color::Orange => "🟧",
-            Color::Red => "🟥",
-            Color::Yellow => "🟨",
-            Color::White => "⬜",
-            Color::Green => "🟩",
-            Color::Blue => "🟦",
+            Self::Orange => "🟧",
+            Self::Red => "🟥",
+            Self::Yellow => "🟨",
+            Self::White => "⬜",
+            Self::Green => "🟩",
+            Self::Blue => "🟦",
         }
     }
 }

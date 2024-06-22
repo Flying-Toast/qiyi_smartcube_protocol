@@ -102,9 +102,7 @@ That would be an ACK for a message that looks like this:
 fe zz XX XX XX XX XX zz zz zz zz zz zz ...
 ```
 
-*Not all* types of cube->app messages need to be ACKed - see the "Needs ACK?" section in the respective command's descriptions.
-
-TODO: seems like state change notifs only need to get ACKed sometimes? Maybe there's a field in the state change command to request an ACK?
+*Not all* types of cube->app messages need to be ACKed all the time - see the "Needs ACK?" section in the respective command's descriptions.
 
 ## Cube Hello
 |Command|Direction|Needs ACK?|
@@ -138,9 +136,9 @@ fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 ## State Change
 |Command|Direction|Needs ACK?|
 |-|-|-|
-|*State Change*|cube->app|yes|
+|*State Change*|cube->app|Only if the state in this message is a solved cube|
 
-TODO: at some point the app can stop sending ACKs until the cube is solved???
+The only time you need to send an ACK for a *State Change* is when the CubeState field is a solved state. For all other State Change messages, no ACK is needed.
 
 ```
 L = length (94)
