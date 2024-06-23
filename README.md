@@ -144,10 +144,11 @@ TS = timestamp (units of 1.6ms)
 S = cube state
 T = what turn was done to the cube
 B = battery level out of 100
+P = previous timestamps + turns
 C = checksum
 
-   L  O      TS                                          S                                            T  B                                                                     ?                                                                                                      C
-   /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /---------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /---\
+   L  O      TS                                          S                                            T  B                                                                             P                                                                                         ?    C
+   /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /\ /---\
 fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
 
@@ -159,7 +160,8 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |7, 27|[CubeState](#cube-state-format)|Cube state|
 |34, 1|u8|The move that was applied to the cube to bring it into this state. See the table below.|
 |35, 1|u8|Battery level, 0-100|
-|36, 56|?|Unknown (Previous turns+timestamps??)|
+|36, 55|-|List of previous moves+their timestamps|
+|91, 1|?|Unknown|
 |92, 2|u16_le|Checksum|
 
 Looking at the cube with white on top and green in front, this is how numbers correspond to turns:
@@ -254,7 +256,7 @@ A solved cube looks like this:
 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55
 ```
 
-Indices into each side's sub-array map to facets like this (W=white, O=orange, etc):
+Indices into each color's array map to faclets like this (W=white, O=orange, etc):
 ```
           ┌──┬──┬──┐
           │W0│W1│W2│
