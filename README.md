@@ -2,10 +2,7 @@ The [QiYi Smart Cube](https://speedcubeshop.com/products/qiyi-ai-3x3-bluetooth-s
 
 This document assumes you are somewhat familiar with Bluetooth Low Energy/GATT. If you are new to it, I recommend reading [this introductory article](https://learn.adafruit.com/introduction-to-bluetooth-low-energy/gatt).
 
-# Reference
-This repo contains a [reference implementation](reference_app) of the protocol.
-
-I've also created a [Wireshark plugin](wireshark_dissector) that is helpful when doing any work with the cube protocol.
+This repo also contains a [Wireshark plugin](wireshark_dissector) that is helpful when doing any work with the cube protocol.
 
 # GATT Profile
 The protocol is on top of Bluetooth Low Energy. The cube has the following GATT profile:
