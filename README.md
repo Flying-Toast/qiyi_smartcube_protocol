@@ -133,9 +133,11 @@ fe 26 02 00 0e 2d aa 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 ## State Change
 |Command|Direction|Needs ACK?|
 |-|-|-|
-|*State Change*|cube->app|Only if the state in this message is a solved cube|
+|*State Change*|cube->app|Only if "needs ACK" byte is set to 1|
 
-The only time you need to send an ACK for a *State Change* is when the CubeState field is a solved state. For all other State Change messages, no ACK is needed.
+The only time you need to send an ACK for a *State Change* is when the "needs ACK" byte (the byte at index 91) is set to 1. For all other State Change messages, no ACK is needed.
+
+Most *State Change* messages do not need to be ACKed (and thus will have their "needs ACK" byte set to 0). The "needs ACK" field only becomes 1 when the CubeState field for this message is a solved state. *However:* there is a glitch that can occur if the cube is solved while doing fast slice moves (e.g. an H-perm), in which case the cube is physically in a solved state but it never sends a *State Change* for that solved state. In this case, the cube will send a *State Change* message that has the "needs ACK" byte set to 1, but where its CubeState field is not solved. **To avoid this issue, treat any State Change messages where "needs ACK" is 1 as if the CubeState is the solved state, even if it isn't.**
 
 ```
 L = length (94)
@@ -145,9 +147,10 @@ S = cube state
 T = what turn was done to the cube
 B = battery level out of 100
 P = previous timestamps + turns
+A = needs ACK?
 C = checksum
 
-   L  O      TS                                          S                                            T  B                                                                             P                                                                                         ?    C
+   L  O      TS                                          S                                            T  B                                                                             P                                                                                         A    C
    /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /------------------------------------------------------------------------------------------------------------------------------------------------------------------\ /\ /---\
 fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 08 64 ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 00 03 00 c6 01 00 03 04 ee 02 00 06 94 ab 07 01 XX XX
 ```
@@ -161,7 +164,7 @@ fe 5e 03 00 06 98 e5 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |34, 1|u8|The move that was applied to the cube to bring it into this state. See the table below.|
 |35, 1|u8|Battery level, 0-100|
 |36, 55|-|List of previous moves+their timestamps|
-|91, 1|?|Unknown|
+|91, 1|u8|needs ACK|
 |92, 2|u16_le|Checksum|
 
 Looking at the cube with white on top and green in front, this is how numbers correspond to turns:
