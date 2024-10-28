@@ -1,3 +1,5 @@
+https://github.com/user-attachments/assets/5214dd19-c26e-4117-93bd-a8521cb28c13
+
 The [QiYi Smart Cube](https://speedcubeshop.com/products/qiyi-ai-3x3-bluetooth-smart-cube-speed-version) is the cheapest of the newly invented genre of bluetooth-enabled "smart" Rubik's cubes. Unfortunately QiYi has refused to publish the protocol used by the cube, and until now there hasn't been much progress in reverse engineering it. This document provides a best effort to reverse engineer and document the protocol, but it is not a complete specification. If you discover anything new please send a pull request!
 
 This document assumes you are somewhat familiar with Bluetooth Low Energy/GATT. If you are new to it, I recommend reading [this introductory article](https://learn.adafruit.com/introduction-to-bluetooth-low-energy/gatt).
