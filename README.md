@@ -48,6 +48,8 @@ These are the kinds of messages:
 - [*State Change*](#state-change)
 - [*Sync State*](#sync-state)
 - [*Sync Confirmation*](#sync-confirmation)
+- [*Request State*](#request-state)
+- [*Current State*](#current-state)
 
 ## Checksum
 
@@ -236,6 +238,59 @@ fe 26 04 00 00 df cc 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00
 |2, 1|u8|Opcode (0x4 for *Sync Confirmation*)|
 |3, 4|u32_be|Timestamp (units of 1.6ms)|
 |7, 27|[CubeState](#cube-state-format)|State the cube now thinks it's in|
+|34, 1|?|Unknown|
+|35, 1|u8|Battery level, 0-100|
+|36, 2|u16_le|Checksum|
+
+## Request State
+|Command|Direction|
+|-|-|
+|*Request State*|app->cube|
+
+You can send a *Request State* command to ask the cube for its current state. This is useful when you want to get the cube's current position without waiting for a move to be made. The cube will respond with a [*Current State*](#current-state) message.
+
+```
+L = length (9)
+M = message content (always 5, 5, 5, 5, 5)
+C = checksum
+
+   L           M           C
+   /\ /-------------------\ /---\
+fe 09 05 05 05 05 05 XX XX
+```
+
+|Bytes (start index, length)|Type|Description|
+|-|-|-|
+|1, 1|u8|Length (always 9 for *Request State*)|
+|2, 5|u8[5]|Message content (always `[5, 5, 5, 5, 5]`)|
+|7, 2|u16_le|Checksum|
+
+## Current State
+|Command|Direction|Needs ACK?|
+|-|-|-|
+|*Current State*|cube->app|no|
+
+Sent in response to a [*Request State*](#request-state) command.
+
+```
+L = length (38)
+O = opcode (0x5)
+TS = timestamp (units of 1.6ms)
+S = cube's current state
+B = battery level
+C = checksum
+
+   L  O      TS                                               S                                       ?  B    C
+   /\ /\ /---------\ /------------------------------------------------------------------------------\ /\ /\ /---\
+fe 26 05 00 00 df cc 33 33 33 33 13 11 11 11 11 44 44 44 44 24 22 22 22 22 00 00 00 00 50 55 55 55 55 00 64 XX XX
+```
+
+|Bytes (start index, length)|Type|Description|
+|-|-|-|
+|1, 1|u8|Length (always 38 for *Current State*)|
+|2, 1|u8|Opcode (0x5 for *Current State*)|
+|3, 4|u32_be|Timestamp (units of 1.6ms)|
+|7, 27|[CubeState](#cube-state-format)|Current cube state|
 |34, 1|?|Unknown|
 |35, 1|u8|Battery level, 0-100|
 |36, 2|u16_le|Checksum|
