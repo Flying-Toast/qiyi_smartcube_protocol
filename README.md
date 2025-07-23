@@ -254,8 +254,8 @@ L = length (9)
 M = message content (always 5, 5, 5, 5, 5)
 C = checksum
 
-   L           M           C
-   /\ /-------------------\ /---\
+   L       M           C
+   /\ /------------\ /---\
 fe 09 05 05 05 05 05 XX XX
 ```
 
@@ -270,7 +270,7 @@ fe 09 05 05 05 05 05 XX XX
 |-|-|-|
 |*Current State*|cube->app|no|
 
-Sent in response to a [*Request State*](#request-state) command.
+Sent in response to a [*Request State*](#request-state) command. The format of this packet is identical to [*Sync Confirmation*](#sync-confirmation) execpt for the opcode (0x5)
 
 ```
 L = length (38)
